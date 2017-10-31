@@ -4,9 +4,11 @@ import { NgModule } from '@angular/core';
 import { AppComponent } from './app.component';
 import { NavComponent } from './nav/nav.component';
 import { MeasurmentsComponent } from './measurments/measurments.component';
+import { MeasurmentsService } from './measurments/measurments.service';
 import { MeasurmentsFormComponent } from './measurments/measurments-form/measurments-form.component';
 import { PatternModificationsComponent } from './pattern-modifications/pattern-modifications.component';
 import { ModificationsFormComponent } from './pattern-modifications/modifications-form/modifications-form.component';
+import { ModificationsService } from './pattern-modifications/modifications.service';
 import { PatternDisplayComponent } from './pattern-display/pattern-display.component';
 import { PatternVectorImageComponent } from './pattern-display/pattern-vector-image/pattern-vector-image.component';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -98,7 +100,9 @@ import { ReactiveFormsModule } from '@angular/forms';
   ],
   providers: [[
     {provide: MAT_PLACEHOLDER_GLOBAL_OPTIONS, useValue: {float: 'auto'}}
-  ]],
+    ],
+    MeasurmentsService,
+    ModificationsService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

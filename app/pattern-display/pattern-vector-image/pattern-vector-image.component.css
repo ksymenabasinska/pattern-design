@@ -4,4 +4,17 @@
     width: 400px;
     height: 600px;
     background: #fff;
+    position: relative;
+}
+.svg-container {
+    position: relative;
+    width: 333px;
+    height: 100%;
+    display: block;
+    margin: 0 auto;
+    top: 78px;
+}
+svg {
+    position: absolute;
+    overflow: visible;
 }
