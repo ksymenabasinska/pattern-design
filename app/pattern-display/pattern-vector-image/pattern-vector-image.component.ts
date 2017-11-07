@@ -1,5 +1,5 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { Point, VectorPoint, LinePurpose, CurveType, VectorObject } from './vector-point';
+import { Point, VectorPoint, SVGPathFactory, LinePurpose, CurveType, VectorObject, Transformer, PathPoint, SVGPath } from './vector-point';
 import { MeasurmentsService } from '../../measurments/measurments.service';
 import { Subscription } from 'rxjs/Rx';
 
@@ -26,10 +26,12 @@ export class PatternVectorImageComponent implements OnInit {
   private mStream: Subscription;
 
   @Input()
-  vectorPoints: VectorPoint[];
+  vectorPoints: PathPoint[] = [];
 
   @Input()
   position: Point;
+
+  public svgPaths: SVGPath[] = [];
 
   public vectorObjects: VectorObject[] = [];
 
@@ -48,9 +50,13 @@ export class PatternVectorImageComponent implements OnInit {
   ngOnInit() {
     this.createHelpers();
     console.log(this.vectorObjects);
+    this.svgPaths = SVGPathFactory.createSVG(this.vectorPoints);
+    console.log(this.svgPaths);
   }
 
   private refresh() {
+    this.vectorPoints = [];
+    this.svgPaths = [];
     this.flushVectors();
 
     this.skirtLength = this.height / 4;
@@ -58,6 +64,8 @@ export class PatternVectorImageComponent implements OnInit {
     this.totalHeight = this.skirtLength + this.hipHeight;
 
     this.createHelpers();
+    this.svgPaths = SVGPathFactory.createSVG(this.vectorPoints);
+
   }
 
   private flushVectors() {
@@ -75,6 +83,61 @@ export class PatternVectorImageComponent implements OnInit {
     this.vectorObjects.push(this.createHorizontalHelper(0, this.hipHeight));
     this.vectorObjects.push(this.createHorizontalHelper(0, this.totalHeight));
 
+    const verticalHelpers = this.createVerticalHelpers();
+    const horizontalHelpers = this.createHorizontalHelpers();
+
+    this.vectorPoints = this.vectorPoints.concat(verticalHelpers, horizontalHelpers);
+    console.log(this.vectorPoints);
+  }
+
+  private createVerticalHelpers(): PathPoint[] {
+    const vHelper: PathPoint[] = this.getVerticalHelperPoints();
+    const middleVHelper: PathPoint[] = Transformer
+      .makeTranslatedBy(vHelper, this.middleVerticalPoint);
+    const backVHelper: PathPoint[] = Transformer
+      .makeTranslatedBy(vHelper, this.backVerticalPoint);
+
+      console.log(vHelper.concat(middleVHelper, backVHelper));
+    return vHelper.concat(middleVHelper, backVHelper);
+  }
+
+  private createHorizontalHelpers(): PathPoint[] {
+    const hHelper: PathPoint[] = this.getHorizontalHelperPoints();
+    const hipsHelper: PathPoint[] = Transformer
+      .makeTranslatedBy(hHelper, this.hipsHorizontalPoint);
+    const bottomHelper: PathPoint[] = Transformer
+      .makeTranslatedBy(hHelper, this.bottomPoint);
+
+    return hHelper.concat(hipsHelper, bottomHelper);
+  }
+
+
+  get middleVerticalPoint(): Point {
+    return {
+      x: this.getBackSeamX() / 2,
+      y: 0,
+    };
+  }
+
+  get backVerticalPoint(): Point {
+    return {
+      x: this.getBackSeamX(),
+      y: 0,
+    };
+  }
+
+  get hipsHorizontalPoint() {
+    return {
+      x: 0,
+      y: this.hipHeight
+    };
+  }
+
+  get bottomPoint() {
+    return {
+      x: 0,
+      y: this.totalHeight
+    };
   }
 
   private createVerticalHelper(startingX: number, startingY: number): VectorObject {
@@ -95,7 +158,8 @@ export class PatternVectorImageComponent implements OnInit {
 
 
 
-  private getHorizontalHelperPoints(): VectorPoint[] {
+  // @TODO add piece id and symetry purpose
+  private getHorizontalHelperPoints() {
     const frontPoint = { y: 0, x: 0 };
     // hip height
     const sidePoint = { y: 0, x: this.getBackSeamX() / 2 };
@@ -118,13 +182,13 @@ export class PatternVectorImageComponent implements OnInit {
     },
     {
       point: backPoint,
-      curve: curveType,
+      curve: CurveType.NONE,
       d: 'M ' + backPoint.x + ' ' + backPoint.y + ' l ' + '0 0',
       linePurpose: linePurpose
     }];
   }
 
-  private getVerticalHelperPoints(): VectorPoint[] {
+  private getVerticalHelperPoints() {
     const waistPoint = { x: 0, y: 0 };
     // hip height
     const hipHeightPoint = { x: 0, y: this.hipHeight };
@@ -147,7 +211,7 @@ export class PatternVectorImageComponent implements OnInit {
     },
     {
       point: bottomPoint,
-      curve: curveType,
+      curve: CurveType.NONE,
       d: 'M ' + bottomPoint.x + ' ' + bottomPoint.y + ' l ' + '0 0',
       linePurpose: linePurpose
     }];

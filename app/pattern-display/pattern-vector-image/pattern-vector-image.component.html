@@ -1,22 +1,20 @@
 <div class="mat-elevation-z1 pattern-image">
 
 <div class="svg-container" [ngStyle]="{width: getBackSeamX() + 'px'}">
-  <svg  
-    *ngFor="let vectorObject of vectorObjects" 
-    [ngStyle]="{left: vectorObject.startingPoint.x, top: vectorObject.startingPoint.y}"
-    top="vectorObject.startingPoint.y">
+
+  <svg>
     <path
-      stroke="#333" 
-      stroke-width="1"
+      *ngFor="let path of svgPaths; let i = index"
+      [attr.stroke]="path.strokeColor" 
+      [attr.stroke-width]="path.strokeWidth"
+      [attr.stroke-dasharray]="path.strokeDasharray"
       fill="none"
-      *ngFor="let point of vectorObject.points; let i = index"
-      stroke-dasharray="5,2"
-      [attr.d]="point.d">
+      [attr.d]="path.d">
     </path>
-    <g stroke="#333" fill="#333">
+    <g stroke="#111" fill="#111">
       <circle
         r="1.1"
-        *ngFor="let point of vectorObject.points"
+        *ngFor="let point of vectorPoints"
         [attr.cx]="point.point.x"
         [attr.cy]="point.point.y"
       />
