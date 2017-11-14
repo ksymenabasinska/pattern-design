@@ -34,8 +34,7 @@ export class MeasurmentsFormComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.changeStream = this.measurments.valueChanges
       .subscribe(changes => {
-      console.log(changes);
-      this.measurmentsService.setMeasurments(changes);
+        this.measurmentsService.setMeasurments(changes);
     });
   }
 

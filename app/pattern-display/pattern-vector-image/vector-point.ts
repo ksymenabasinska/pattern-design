@@ -1,10 +1,59 @@
-export interface VectorPoint {
-   point: Point;
-   curve: CurveType;
-   linePurpose: LinePurpose;
-   // factory should take care of it
-   // @TODO seam allowanceInMM
-   d: string;
+
+// no line is also a connection type
+// this way we dont have to create new objects
+export enum CurveType {
+    ARCH,
+    LINE,
+    HIP_CURVE,
+    NONE
+}
+
+export enum LinePurpose {
+    HEM,
+    CUT,
+    HELPER,
+    DART_TOP_A,
+    DART_TOP_B,
+    DART_BOTTOM,
+    YOKE_TOP,
+    YOKE_SIDE,
+    SYMETRY_FOLD,
+    SIDE_SEAM
+}
+
+const basicStrokeWidth = 0.2;
+export const StrokeStyles = {
+    HELPER: <StrokeStyle> {
+        colorHash: '#666',
+        width: basicStrokeWidth,
+        dasharray: '0.5, 0.2'
+    },
+    FOLD: <StrokeStyle> {
+        colorHash: '#000',
+        width: basicStrokeWidth / 2,
+        dasharray: '0.2, 0.2'
+    },
+    SEAM_ALLOWANCE: <StrokeStyle> {
+        colorHash: '#000',
+        width: basicStrokeWidth / 2,
+        dasharray: '0.8, 0.1'
+    },
+    DART: <StrokeStyle> {
+        colorHash: '#000',
+        width: basicStrokeWidth / 2,
+        dasharray: ''
+    },
+    NORMAL: <StrokeStyle> {
+        colorHash: '#000',
+        width: basicStrokeWidth,
+        dasharray: ''
+    },
+};
+
+export interface StrokeStyle {
+    colorHash: string;
+    width: number;
+    dasharray: string;
 }
 
 export interface Point {
@@ -12,16 +61,12 @@ export interface Point {
     y: number;
 }
 
-// should I really use this data structure
-// it has to know if it is still the same object
-// maybe I can create hem *startPoint, *endPoint
-// create a structure like this, let other function extract all hems etc. and name them
 export interface PathPoint {
     point: Point;
     curve: CurveType;
-    linePurpose: LinePurpose;
+    linePurposes: LinePurpose[];
+    pieceIds?: number[];
     seamAllowance?: number;
-    d?: string;
 }
 
 export interface Curve {
@@ -29,34 +74,16 @@ export interface Curve {
    curvePoints: Point[];
 }
 
-export interface VectorObject {
-    points: VectorPoint[];
-    isClosed: boolean;
-    // @TODO this should belong to transformations
-    // this is a dumb structure
-    // wise component should perform translation operation.
-    startingPoint: Point;
+export interface SVGPath {
+    strokeColor: string;
+    strokeWidth: number;
+    strokeDasharray: string;
+    d: string;
 }
 
-export interface VectorPath {
-    points: PathPoint[];
-    isClosed: boolean;
-
-}
-
-// no line is also a connection type
-// this way we dont have to create ne objects
-export enum CurveType {
-    CUBIC_BREZIER,
-    ARCH,
-    LINE,
-    NONE
-}
-
-export enum LinePurpose {
-    HEM,
-    CUT,
-    HELPER
+export interface FabricPiece {
+    id: number;
+    position: Point;
 }
 
 export function VectorPointFactory(x, y, curveType, linePurpose) {
@@ -72,6 +99,7 @@ export function VectorPointFactory(x, y, curveType, linePurpose) {
     };
 }
 
+// is this really necessary?
 export const CurveFactory = {
     createCurve(test) {
         return '';
@@ -91,29 +119,25 @@ export const CurveFactory = {
     }
 };
 
-export const StrokeStyles = {
-    HELPER: '5,2',
-    FOLD: '5,5',
-    SEAM_ALLOWANCE: '8,1'
-};
 
-export interface SVGPath {
-    strokeColor: string;
-    strokeWidth: number;
-    strokeDasharray: string;
-    d: string;
-}
 
 // @TODO make it a service
+// connect paths instead of creating new
 export const SVGPathFactory = {
     createSVG(pathPoints: PathPoint[]) {
         const svg: SVGPath[] = [];
         pathPoints.forEach((path, i) => {
             if (path.curve !== CurveType.NONE) {
+                let stroke;
+                if (path.linePurposes.find(lineP => lineP === LinePurpose.HELPER)) {
+                    stroke = StrokeStyles.HELPER;
+                } else {
+                    stroke = StrokeStyles.NORMAL;
+                }
                 svg.push({
-                    strokeColor: '#333',
-                    strokeWidth: 1,
-                    strokeDasharray: StrokeStyles.HELPER,
+                    strokeColor: stroke.colorHash,
+                    strokeWidth: stroke.width,
+                    strokeDasharray: stroke.dasharray,
                     d: createPathD(path.point, pathPoints[i + 1].point, path.curve)
                 });
             }
@@ -124,10 +148,37 @@ export const SVGPathFactory = {
 
 
 export function createPathD(from: Point, to: Point, curveType: CurveType): string {
+    if (curveType === CurveType.LINE) {
+        return createStraightLine(from, to);
+    } else if (curveType === CurveType.HIP_CURVE) {
+        return createHipLine(from, to);
+    }
+}
+
+export function createStraightLine(from: Point, to: Point) {
     return 'M ' + from.x + ' ' + from.y + ' l ' + (to.x - from.x) + ' ' + (to.y - from.y);
 }
 
+export function createHipLine(from: Point, to: Point) {
+    // should be 45deg
+    // y = -x
+    const pullStrength = (to.x - from.x) / 2;
+    const topCurvePoint = {
+        x: pullStrength + from.x,
+        y: pullStrength + from.y
+    };
 
+    const bottomCurvePoint = {
+        x: to.x,
+        y: (to.y - from.y) / 2 + from.y
+    };
+    return createBrezierCurve(from, to, topCurvePoint, bottomCurvePoint);
+}
+
+export function createBrezierCurve(from: Point, to: Point, c1: Point, c2: Point) {
+    return 'M ' + from.x + ' ' + from.y + ' C ' +
+        c1.x + ' ' + c1.y + ' ' + c2.x + ' ' + c2.y + ' ' + to.x + ' ' +  to.y;
+}
 
 export const Transformer = {
     makeTranslatedBy(paths: PathPoint[],  vector: Point): PathPoint[] {
@@ -146,5 +197,19 @@ export const Transformer = {
     },
     makeScaledBy(vectorObject: PathPoint[],  scale: number) {
 
+    }
+};
+
+export const PieceFactory = {
+    _id: 0,
+
+    createBlankPiece(): FabricPiece {
+        return {
+            id: this._id++,
+            position: {
+                    x: 0,
+                    y: 0
+                }
+        };
     }
 };

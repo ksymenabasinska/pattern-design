@@ -1,8 +1,8 @@
 <div class="mat-elevation-z1 pattern-image">
 
-<div class="svg-container" [ngStyle]="{width: getBackSeamX() + 'px'}">
-
-  <svg>
+<div class="svg-container" [ngStyle]="{width: backSeamX * 7 + 'px', height: totalHeight * 7 + 'px'}">
+  <svg 
+    [attr.viewBox]="viewbox">
     <path
       *ngFor="let path of svgPaths; let i = index"
       [attr.stroke]="path.strokeColor" 
@@ -12,8 +12,9 @@
       [attr.d]="path.d">
     </path>
     <g stroke="#111" fill="#111">
-      <circle
-        r="1.1"
+      <circle 
+        stroke-width="0.2"
+        r="0.2"
         *ngFor="let point of vectorPoints"
         [attr.cx]="point.point.x"
         [attr.cy]="point.point.y"
